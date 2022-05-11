@@ -51,7 +51,7 @@ void Leitura(){
         delay(2000); //2 segundos para efetuar uma nova leitura
 }
 void presencaConfirmada(){
-  Serial.println("Prença Confirmada: " + IDtag); //Exibe a mensagem "Presença confirmada" e o ID da tag não cadastrada
+  Serial.println("Presença Confirmada: " + IDtag); //Exibe a mensagem "Presença confirmada" e o ID da tag não cadastrada
     efeitoConfirmado();  //Chama a função efeitoConfirmado()
     Permitido = false;  //Seta a variável Permitido como false novamente
 }
