@@ -1,0 +1,89 @@
+//Bibliotecas
+#include <SPI.h>//comunicação entre leitor e arduino
+#include <MFRC522.h> //leitor RFID
+//Pinos. Utilizamos a define ao invés do int para economizar a memória do arduino 
+#define LED_VERDE 4
+#define LED_VERMELHO 2
+#define BUZZER 3
+#define SS_PIN 10
+#define RST_PIN 9
+String IDtag = ""; //Variável que armazenará o ID da Tag
+//boll pois ela atribui apenas dois valores verdadeiro ou falso(inicialemente falso)
+bool Permitido = false; //Variável que verifica a permissão.
+//Vetor responsável por armazenar os ID's das Tag's cadastradas
+String TagsCadastradas[] = {"357f99a", 
+                            "ID_2",
+                            "ID_3"};
+MFRC522 LeitorRFID(SS_PIN, RST_PIN);    // Cria uma nova instância para o leitor e passa os pinos como parâmetro( check-List)
+void setup() {
+        Serial.begin(9600);             // Inicia a comunicação Serial
+        SPI.begin();                    // Inicia comunicacao SPI 
+        LeitorRFID.PCD_Init();          // Inicia o leitor RFID
+        pinMode(LED_VERDE, OUTPUT);     // Declara led verde como saída
+        pinMode(LED_VERMELHO, OUTPUT);  // Declara led vermelho como saída
+        pinMode(BUZZER,OUTPUT);         // Declara o buzzer como saída
+}
+void loop() {  
+  Serial.println("Aproxime seu Acesso");
+  Leitura();  //Chama a função responsável por fazer a leitura das Tag's
+}
+void Leitura(){
+        IDtag = ""; //Inicialmente IDtag vazia.
+        
+        // Verifica se existe Tag presente( no leitor)
+        if ( !LeitorRFID.PICC_IsNewCardPresent() || !LeitorRFID.PICC_ReadCardSerial() ) {
+            delay(500);// a cada 50 mls é verificado se passou algo no sensor
+            return;
+        }
+        
+        // Pega o ID da Tag através da função LeitorRFID.uid e Armazena o ID na variável IDtag        
+        for (byte i = 0; i < LeitorRFID.uid.size; i++) {        
+            IDtag.concat(String(LeitorRFID.uid.uidByte[i], HEX));
+        }        
+        //Compara o ID lido com os IDs armazenados no vetor TagsCadastradas[]
+        for (int i = 0; i < (sizeof(TagsCadastradas)/sizeof(String)); i++) {
+          if(  IDtag.equalsIgnoreCase(TagsCadastradas[i])  ){
+              Permitido = true; //Variável Permitido assume valor verdadeiro(bool) caso o ID Lido esteja cadastrado
+          }
+        }       
+        if(Permitido == true) presencaConfirmada(); //Se a variável Permitida for verdadeira será chamada a função presença confirmada()        
+        else faltaConfirmada(); //Se não será chamada a função presença não confirmada()
+        delay(2000); //2 segundos para efetuar uma nova leitura
+}
+void presencaConfirmada(){
+  Serial.println("Prença Confirmada: " + IDtag); //Exibe a mensagem "Presença confirmada" e o ID da tag não cadastrada
+    efeitoConfirmado();  //Chama a função efeitoConfirmado()
+    Permitido = false;  //Seta a variável Permitido como false novamente
+}
+void faltaConfirmada(){
+  Serial.println("Presença não confirmada: " + IDtag); //Exibe a mensagem "Presença não confirmada" e o ID da tag cadastrada
+  efeitoFalta(); //Chama a função efeitoNegado()  
+}
+void efeitoConfirmado(){  
+  int qtd_bips = 2; //definindo a quantidade de bips
+  for(int j=0; j<qtd_bips; j++){
+    //Ligando o buzzer com uma frequência de 1500 hz e ligando o led verde.
+    tone(BUZZER,1500);
+    digitalWrite(LED_VERDE, HIGH);   
+    delay(200);    
+   //Desligando o buzzer e led verde.      
+    noTone(BUZZER);
+    digitalWrite(LED_VERDE, LOW);
+    delay(200);
+  }  
+}
+void efeitoFalta(){  
+  int qtd_bips = 1;  //definindo a quantidade de bips
+  for(int j=0; j<qtd_bips; j++){   
+    //Ligando o buzzer com uma frequência de 500 hz e ligando o led vermelho.
+    tone(BUZZER,500);
+    digitalWrite(LED_VERMELHO, HIGH);   
+    delay(500); 
+      
+    //Desligando o buzzer e o led vermelho.
+    noTone(BUZZER);
+    digitalWrite(LED_VERMELHO, LOW);
+    delay(500);
+  }  
+
+}
